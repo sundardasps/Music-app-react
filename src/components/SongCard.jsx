@@ -39,24 +39,16 @@ function SongCard({
 
   // Create audio instance when song changes
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    audioRef.current = new Audio(song?.musicUrl);
-    audioRef.current.volume = volume;
+    audio.pause();
+    audio.src = song?.musicUrl;
+    audio.load();
 
-    const handleTimeUpdate = () => {
-      const currentAudio = audioRef.current;
-      if (currentAudio && currentAudio.duration) {
-        setProgress((currentAudio.currentTime / currentAudio.duration) * 100);
-      }
-    };
+    audio.volume = volume;
 
-    audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
-
-    // ✅ Auto-play new song
-    audioRef.current
+    audio
       .play()
       .then(() => {
         setIsPlaying(true);
@@ -67,8 +59,7 @@ function SongCard({
       });
 
     return () => {
-      audioRef.current?.pause();
-      audioRef.current?.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.pause();
     };
   }, [song]);
 
@@ -174,7 +165,6 @@ function SongCard({
             fontSize: "16px",
             lineHeight: "24px",
             letterSpacing: "0%",
-            
           }}
         >
           {song?.artistName}
@@ -196,38 +186,38 @@ function SongCard({
           // override with media query below
         />
       </div>
-        <input
-          type="range"
-          min={0}
-          max={audioRef.current?.duration || 0}
-          step={0.1}
-          value={audioRef.current?.currentTime || 0}
-          onMouseDown={() => {
-            setIsPlaying(!isPlaying);
-            if (audioRef.current && !audioRef.current.paused) {
-              audioRef.current.pause();
-            }
-          }}
-          onMouseUp={(e) => {
-            setIsPlaying(!isPlaying);
-            const newTime = parseFloat(e.target.value);
-            if (audioRef.current) {
-              audioRef.current.currentTime = newTime;
-              audioRef.current.play(); // Resume playback
-              setIsPlaying(true);
-            }
-          }}
-          onChange={(e) => {
-            const newTime = parseFloat(e.target.value);
-            if (audioRef.current) {
-              audioRef.current.currentTime = newTime;
-            }
-          }}
-          style={{
-            height: "5px",
-            accentColor: "#ffffff",
-          }}
-        />
+      <input
+        type="range"
+        min={0}
+        max={audioRef.current?.duration || 0}
+        step={0.1}
+        value={audioRef.current?.currentTime || 0}
+        onMouseDown={() => {
+          setIsPlaying(!isPlaying);
+          if (audioRef.current && !audioRef.current.paused) {
+            audioRef.current.pause();
+          }
+        }}
+        onMouseUp={(e) => {
+          setIsPlaying(!isPlaying);
+          const newTime = parseFloat(e.target.value);
+          if (audioRef.current) {
+            audioRef.current.currentTime = newTime;
+            audioRef.current.play(); // Resume playback
+            setIsPlaying(true);
+          }
+        }}
+        onChange={(e) => {
+          const newTime = parseFloat(e.target.value);
+          if (audioRef.current) {
+            audioRef.current.currentTime = newTime;
+          }
+        }}
+        style={{
+          height: "5px",
+          accentColor: "#ffffff",
+        }}
+      />
 
       <div className="d-flex justify-content-between align-items-center mt-3 ">
         <Dropdown>
@@ -276,6 +266,19 @@ function SongCard({
             src={!isPlaying ? pause : play}
             alt="play/pause"
             style={{ cursor: "pointer" }}
+          />
+          <audio
+            ref={audioRef}
+            preload="auto"
+            src={song?.musicUrl}
+            onTimeUpdate={() => {
+              const currentAudio = audioRef.current;
+              if (currentAudio && currentAudio.duration) {
+                setProgress(
+                  (currentAudio.currentTime / currentAudio.duration) * 100
+                );
+              }
+            }}
           />
           <img
             src={forward}
